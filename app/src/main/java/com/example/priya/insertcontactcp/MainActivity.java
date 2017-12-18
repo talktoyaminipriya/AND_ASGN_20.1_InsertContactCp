@@ -19,32 +19,29 @@ import java.util.ArrayList;
 public class MainActivity extends AppCompatActivity {
 
     EditText mname,mphone;
-    Button maddcontact,mview;
-    TextView mdisplay;
+    Button maddcontact;
+   
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        // calling views
         mname = (EditText)findViewById(R.id.name);
         mphone = (EditText)findViewById(R.id.phone);
         maddcontact = (Button) findViewById(R.id.addcontact);
-        mview = (Button)findViewById(R.id.view);
-        mdisplay = (TextView)findViewById(R.id.dispaly);
-
-        mview.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                displayContacts();
-            }
-        });
+     
         maddcontact.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                
+                //  Gets values from the UI
 
                 String name = mname.getText().toString();
                 String phone =mphone.getText().toString();
+                
+                // checks if fields empty or not
 
                 if(name.equals("")&&phone.equals("")){
                     Toast.makeText(getApplicationContext(),"Fields are empty",Toast.LENGTH_SHORT).show();
@@ -57,7 +54,7 @@ public class MainActivity extends AppCompatActivity {
         });
 
     }
-
+// insert contact method
     public void createContact (String name , String phone){
 
         Cursor cursor = getContentResolver().query(android.provider.ContactsContract.Contacts.CONTENT_URI,null,null,null,null);
@@ -77,29 +74,38 @@ public class MainActivity extends AppCompatActivity {
             }
         }
 // operation
+        
+        // Creates a new array of ContentProviderOperation objects.
         ArrayList<ContentProviderOperation> ops =
                 new ArrayList<ContentProviderOperation>();
 
         int rawContactInsertIndex = ops.size();
 
+        // Builds the operation and inserts it to the array of operations
         ops.add(ContentProviderOperation.newInsert(ContactsContract.RawContacts.CONTENT_URI)
                 .withValue(ContactsContract.RawContacts.ACCOUNT_TYPE, null)
                 .withValue(ContactsContract.RawContacts.ACCOUNT_NAME, null)
+                // Builds the operation and adds it to the array of operations
                 .build());
 
         ops.add(ContentProviderOperation.newInsert(ContactsContract.Data.CONTENT_URI)
                 .withValueBackReference(ContactsContract.Data.RAW_CONTACT_ID, rawContactInsertIndex)
                 .withValue(ContactsContract.Contacts.Data.MIMETYPE, ContactsContract.CommonDataKinds.StructuredName.CONTENT_ITEM_TYPE)
+                 // inserts the specified Name data row and sets name
                 .withValue(ContactsContract.CommonDataKinds.StructuredName.DISPLAY_NAME, name)
+                // Builds the operation and adds it to the array of operations
                 .build());
 
         ops.add(ContentProviderOperation.newInsert(ContactsContract.Data.CONTENT_URI)
                 .withValueBackReference(ContactsContract.Data.RAW_CONTACT_ID, rawContactInsertIndex)
                 .withValue(ContactsContract.Contacts.Data.MIMETYPE, ContactsContract.CommonDataKinds.Phone.CONTENT_ITEM_TYPE)
+                   // inserts the specified Phone data row and sets phone number
                 .withValue(ContactsContract.CommonDataKinds.Phone.NUMBER, phone)
                 .withValue(ContactsContract.CommonDataKinds.Phone.TYPE, ContactsContract.CommonDataKinds.Phone.TYPE_MOBILE)
+                // Builds the operation and adds it to the array of operations
                 .build());
-
+        
+        //Applies the array of ContentProviderOperation objects in batch. The results are discarded.
         try {
             getContentResolver().applyBatch(ContactsContract.AUTHORITY, ops);
             Toast.makeText(getBaseContext(), "Contacts inserted sucessfully", Toast.LENGTH_SHORT).show();
@@ -113,43 +119,6 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-    public void displayContacts() {
+    
 
-        //this class provides application access to the content model
-        ContentResolver contentResolver = getContentResolver();
-
-
-        Cursor cursor = contentResolver.query(ContactsContract.Contacts.CONTENT_URI, null, null, null, null);
-        int count = cursor.getCount();
-        if (count > 0) {
-
-            String contactDetails = "";
-            while (cursor.moveToFirst()) {
-
-                String columnId = ContactsContract.Contacts._ID;
-                int cursorIndex = cursor.getColumnIndex(columnId);
-
-                String id = cursor.getString(cursorIndex);
-                String name = cursor.getString(cursor.getColumnIndex(ContactsContract.Contacts.DISPLAY_NAME));
-
-                int numCount = Integer.parseInt(cursor.getString(cursor.getColumnIndex(ContactsContract.Contacts.HAS_PHONE_NUMBER)));
-
-                if (numCount > 0) {
-
-                    Cursor phoneCursor = contentResolver.query(ContactsContract.CommonDataKinds.Phone.CONTENT_URI, null,
-                            ContactsContract.CommonDataKinds.Phone.CONTACT_ID + "=?", new String[]{id}, null);
-
-                    while (phoneCursor.moveToNext()) {
-
-                        String phoneno = phoneCursor.getString(phoneCursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER));
-
-                        contactDetails += "Name: " + name + "Phone No: " + phoneno + "\n";
-                    }
-                    phoneCursor.close();
-                }
-            }
-            mdisplay.setText(contactDetails);
-        }
-    }
-}
 
